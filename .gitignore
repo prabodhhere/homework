@@ -90,3 +90,6 @@ ENV/
 
 # expert data
 expert_data/
+
+# logs
+logs/

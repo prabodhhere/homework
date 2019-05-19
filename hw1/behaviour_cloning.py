@@ -6,6 +6,24 @@ import tf_util
 import gym
 import load_policy
 from sklearn.model_selection import train_test_split
+from datetime import datetime
+import matplotlib.pyplot as plt
+
+logdir = "logs/scalars/" + datetime.now().strftime("%Y%m%d-%H%M%S")
+file_writer = tf.summary.FileWriter(logdir + "/metrics")
+
+tensorboard_callback = tf.keras.callbacks.TensorBoard(log_dir=logdir)
+
+def variable_summaries(var):
+  with tf.name_scope('summaries'):
+    mean = tf.reduce_mean(var)
+    tf.summary.scalar('mean', mean)
+    with tf.name_scope('stddev'):
+      stddev = tf.sqrt(tf.reduce_mean(tf.square(var - mean)))
+    tf.summary.scalar('stddev', stddev)
+    tf.summary.scalar('max', tf.reduce_max(var))
+    tf.summary.scalar('min', tf.reduce_min(var))
+    tf.summary.histogram('histogram', var)
 
 # import argparse
 # parser = argparse.ArgumentParser()
@@ -21,6 +39,9 @@ from sklearn.model_selection import train_test_split
 # policy_fn = load_policy.load_policy(args.expert_policy_file)
 # print('loaded and built')
 
+###########################################
+# DEFINE MODEL
+###########################################
 class model_bc(tf.keras.Model):
 
   def __init__(self, num_classes):
@@ -44,15 +65,18 @@ class model_bc(tf.keras.Model):
       x = self.dropout(x)
     return self.dense_4(x)
 
-
-def test():
+###########################################
+#
+###########################################
+rewards_mean = []
+def run_episodes():
   env = gym.make("HalfCheetah-v2")
   max_steps = env.spec.timestep_limit
 
   returns = []
   observations = []
   actions = []
-  for i in range(10):
+  for i in range(5):
       print('iter', i)
       obs = env.reset()
       obs = (obs - obs_mean) / obs_std
@@ -81,7 +105,7 @@ def test():
   print(env.observation_space)
   expert_data = {'observations': np.array(observations),
                   'actions': np.array(actions)}
-
+  rewards_mean.append(np.mean(returns))
 ###########################################
 
 ###########################################
@@ -109,14 +133,33 @@ model.compile(optimizer=tf.train.AdamOptimizer(0.01),
               metrics=['mae'])  # mean absolute error
 
 
+class rewards_callback(tf.keras.callbacks.Callback):
+    def on_epoch_end(self, epoch, logs=None):
+        if epoch % 2 == 1:
+          run_episodes()
+
+rewards_callback = rewards_callback()
 ###########################################
 
 ###########################################
 
-model.fit(x_train, y_train, validation_data = (x_val, y_val), batch_size=64, epochs=10, verbose=1)
-# val_loss = model.evaluate(x_val, y_val, batch_size=32, verbose=1)
-test()
-# a = model.predict(np.array([obs]), batch_size=1, verbose=1)
-# max_steps = args.max_timesteps or env.spec.timestep_limit
+model.fit(x_train, y_train, 
+          validation_data = (x_val, y_val), 
+          batch_size=64, 
+          epochs=10, 
+          verbose=1,
+          callbacks=[tensorboard_callback, rewards_callback])
+
+###########################################
+
+###########################################
+
+
+###########################################
+
+###########################################
+
+plt.plot(rewards_mean)
+plt.show()
 
 
