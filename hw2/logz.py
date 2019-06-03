@@ -54,6 +54,9 @@ def configure_output_dir(d=None):
     assert not osp.exists(G.output_dir), "Log dir %s already exists! Delete it first or use a different dir"%G.output_dir
     os.makedirs(G.output_dir)
     G.output_file = open(osp.join(G.output_dir, "log.txt"), 'w')
+    G.first_row = True
+    G.log_current_row = []
+    G.log_current_row = {}
     atexit.register(G.output_file.close)
     print(colorize("Logging data to %s"%G.output_file.name, 'green', bold=True))
 
@@ -93,14 +96,14 @@ def dump_tabular():
     keystr = '%'+'%d'%max_key_len
     fmt = "| " + keystr + "s | %15s |"
     n_slashes = 22 + max_key_len
-    print("-"*n_slashes)
+    # print("-"*n_slashes)
     for key in G.log_headers:
         val = G.log_current_row.get(key, "")
         if hasattr(val, "__float__"): valstr = "%8.3g"%val
         else: valstr = val
-        print(fmt%(key, valstr))
+        # print(fmt%(key, valstr))
         vals.append(val)
-    print("-"*n_slashes)
+    # print("-"*n_slashes)
     if G.output_file is not None:
         if G.first_row:
             G.output_file.write("\t".join(G.log_headers))

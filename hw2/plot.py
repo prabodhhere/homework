@@ -50,11 +50,11 @@ the --legend flag and then provide a title for each logdir.
 
 def plot_data(data, value="AverageReturn"):
     if isinstance(data, list):
-        data = pd.concat(data, ignore_index=True)
-
-    sns.set(style="darkgrid", font_scale=1.5)
-    sns.tsplot(data=data, time="Iteration", value=value, unit="Unit", condition="Condition")
-    plt.legend(loc='best').draggable()
+        data = pd.concat(data, ignore_index=True, sort=False)
+    plt.figure(figsize=(16, 6))
+    # plt.legend(loc='best').draggable()
+    sns.set(style="darkgrid")
+    sns.lineplot(data=data, x="Iteration", y=value, hue='Experiment')
     plt.show()
 
 
@@ -68,7 +68,7 @@ def get_datasets(fpath, condition=None):
             exp_name = params['exp_name']
             
             log_path = os.path.join(root,'log.txt')
-            experiment_data = pd.read_table(log_path)
+            experiment_data = pd.read_csv(log_path, sep='\t')
 
             experiment_data.insert(
                 len(experiment_data.columns),
@@ -77,7 +77,7 @@ def get_datasets(fpath, condition=None):
                 )        
             experiment_data.insert(
                 len(experiment_data.columns),
-                'Condition',
+                'Experiment',
                 condition or exp_name
                 )
 
